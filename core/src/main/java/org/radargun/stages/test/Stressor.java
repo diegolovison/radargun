@@ -98,7 +98,7 @@ public class Stressor extends Thread {
             if (started) {
                txRemainingOperations = 0;
                if (ongoingTx != null) {
-                  endTransactionAndRegisterStats(null);
+                  endTransactionAndRegisterStats();
                }
                break;
             } else {
@@ -143,7 +143,7 @@ public class Stressor extends Thread {
          }
       } finally {
          if (txRemainingOperations > 0) {
-            endTransactionAndRegisterStats(null);
+            endTransactionAndRegisterStats();
          }
       }
    }
@@ -177,9 +177,10 @@ public class Stressor extends Thread {
       T result = null;
       Exception exception = null;
       Request request = nextRequest();
+      Operation operation = isUseTransactions() ? invocation.txOperation() : invocation.operation();
       try {
          result = invocation.invoke();
-         succeeded(request, invocation.operation());
+         succeeded(request, operation);
          // make sure that the return value cannot be optimized away
          // however, we can't be 100% sure about reordering without
          // volatile writes/reads here
@@ -188,7 +189,7 @@ public class Stressor extends Thread {
             txRemainingOperations--;
          }
       } catch (Exception e) {
-         failed(request, invocation.operation());
+         failed(request, operation);
          log.warn("Error in request", e);
          txRemainingOperations = 0;
          exception = e;
@@ -198,7 +199,7 @@ public class Stressor extends Thread {
       }
 
       if (useTransactions && txRemainingOperations <= 0) {
-         endTransactionAndRegisterStats(stage.isSingleTxType() ? invocation.txOperation() : null);
+         endTransactionAndRegisterStats();
       }
       if (exception != null) {
          throw new OperationLogic.RequestException(exception);
@@ -226,7 +227,7 @@ public class Stressor extends Thread {
       }
    }
 
-   private void endTransactionAndRegisterStats(Operation singleTxOperation) {
+   private void endTransactionAndRegisterStats() {
       Request commitRequest = recording() ? stats.startRequest() : null;
       try {
          if (stage.commitTransactions) {
@@ -245,9 +246,6 @@ public class Stressor extends Thread {
             if (recording()) {
                requests.add(commitRequest);
                requests.finished(commitRequest.isSuccessful(), Transactional.DURATION);
-               if (singleTxOperation != null) {
-                  requests.finished(commitRequest.isSuccessful(), singleTxOperation);
-               }
             } else {
                requests.discard();
             }

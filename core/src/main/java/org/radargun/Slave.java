@@ -153,6 +153,11 @@ public class Slave extends SlaveBase {
          extras.put(Properties.PROPERTY_GROUP_PREFIX + g.name + Properties.PROPERTY_SIZE_SUFFIX, String.valueOf(group.size));
       }
       extras.put(Properties.PROPERTY_PROCESS_ID, String.valueOf(Utils.getProcessID()));
+      configuration.getSetups().forEach(setup ->
+         setup.getEnvironment().forEach((k, v) -> {
+            extras.put(k, v.toString());
+         })
+      );
       return extras;
    }
 }

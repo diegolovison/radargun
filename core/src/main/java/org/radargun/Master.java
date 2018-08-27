@@ -218,6 +218,11 @@ public class Master {
       }
       extras.put(Properties.PROPERTY_SLAVE_INDEX, "-1");
       extras.put(Properties.PROPERTY_PROCESS_ID, String.valueOf(Utils.getProcessID()));
+      configuration.getSetups().forEach(setup ->
+         setup.getEnvironment().forEach((k, v) -> {
+            extras.put(k, v.toString());
+         })
+      );
       return extras;
    }
 

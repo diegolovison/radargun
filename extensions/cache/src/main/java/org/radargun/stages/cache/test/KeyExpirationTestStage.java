@@ -1,9 +1,7 @@
 package org.radargun.stages.cache.test;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeSet;
@@ -60,19 +58,6 @@ public class KeyExpirationTestStage extends CacheTestStage {
          .add(BasicOperations.PUT, putRatio)
          .add(BasicOperations.GET, getRatio)
          .build();
-
-      statisticsPrototype.registerOperationsGroup(BasicOperations.class.getSimpleName() + ".Total",
-              new HashSet<>(Arrays.asList(
-                  BasicOperations.GET,
-                  CacheInvocations.Get.GET_NULL,
-                  BasicOperations.PUT
-              )));
-      statisticsPrototype.registerOperationsGroup(BasicOperations.class.getSimpleName() + ".Total.TX",
-              new HashSet<>(Arrays.asList(
-                  BasicOperations.GET,
-                  CacheInvocations.Get.GET_NULL,
-                  BasicOperations.PUT
-              )));
    }
 
 

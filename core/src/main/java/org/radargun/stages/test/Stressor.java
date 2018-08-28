@@ -12,6 +12,7 @@ import org.radargun.logging.LogFactory;
 import org.radargun.stats.Request;
 import org.radargun.stats.RequestSet;
 import org.radargun.stats.Statistics;
+import org.radargun.traits.OverallOperation;
 import org.radargun.traits.Transactional;
 import org.radargun.utils.TimeService;
 
@@ -110,7 +111,7 @@ public class Stressor extends Thread {
                try {
                   logic.run(operation);
                   if (thinkTime > 0)
-                    sleep(thinkTime);
+                     sleep(thinkTime);
                } catch (OperationLogic.RequestException e) {
                   // the exception was already logged in makeRequest
                } catch (InterruptedException e) {
@@ -157,52 +158,73 @@ public class Stressor extends Thread {
    }
 
    public <T> T makeRequest(Invocation<T> invocation, boolean countForTx) throws OperationLogic.RequestException {
-      if (useTransactions && txRemainingOperations <= 0) {
-         try {
-            ongoingTx = stage.transactional.getTransaction();
-            logic.transactionStarted();
-            if (recording()) {
-               requests = stats.requestSet();
-            }
-            Request beginRequest = startTransaction();
-            if (requests != null && beginRequest != null) {
-               requests.add(beginRequest);
-            }
-            txRemainingOperations = stage.transactionSize;
-         } catch (TransactionException e) {
-            throw new OperationLogic.RequestException(e);
-         }
-      }
 
       T result = null;
-      Exception exception = null;
-      Request request = nextRequest();
-      Operation operation = invocation.operation();
       try {
-         result = invocation.invoke();
-         succeeded(request, operation);
-         // make sure that the return value cannot be optimized away
-         // however, we can't be 100% sure about reordering without
-         // volatile writes/reads here
-         Blackhole.consume(result);
-         if (countForTx) {
-            txRemainingOperations--;
+         if (recording()) {
+            requests = stats.requestSet();
+            Request beginOperation = enqueueRequest();
+            beginOperation.succeeded(OverallOperation.BEGIN);
+            requests.add(beginOperation);
          }
-      } catch (Exception e) {
-         failed(request, operation);
-         log.warn("Error in request", e);
-         txRemainingOperations = 0;
-         exception = e;
-      }
-      if (requests != null && request != null && recording()) {
-         requests.add(request);
-      }
 
-      if (useTransactions && txRemainingOperations <= 0) {
-         endTransactionAndRegisterStats();
-      }
-      if (exception != null) {
-         throw new OperationLogic.RequestException(exception);
+         if (recording() && requests != null && useTransactions && txRemainingOperations <= 0) {
+            try {
+               ongoingTx = stage.transactional.getTransaction();
+               logic.transactionStarted();
+               Request beginTransactionRequest = startTransaction();
+               if (requests != null && beginTransactionRequest != null) {
+                  requests.add(beginTransactionRequest);
+               }
+               txRemainingOperations = stage.transactionSize;
+            } catch (TransactionException e) {
+               throw new OperationLogic.RequestException(e);
+            }
+         }
+
+         Request request = null;
+         if (recording() && requests != null) {
+            Exception exception = null;
+            request = stats.startRequest();
+            Operation operation = invocation.operation();
+            try {
+               result = invocation.invoke();
+               succeeded(request, operation);
+               // make sure that the return value cannot be optimized away
+               // however, we can't be 100% sure about reordering without
+               // volatile writes/reads here
+               Blackhole.consume(result);
+               if (countForTx) {
+                  txRemainingOperations--;
+               }
+            } catch (Exception e) {
+               failed(request, operation);
+               log.warn("Error in request", e);
+               txRemainingOperations = 0;
+               exception = e;
+            }
+            if (exception != null) {
+               throw new OperationLogic.RequestException(exception);
+            }
+            requests.add(request);
+         }
+
+         if (recording() && requests != null && request != null) {
+            if (useTransactions && txRemainingOperations <= 0) {
+               Request commitRequest = endTransactionAndRegisterStats();
+               requests.add(commitRequest);
+               requests.finished(commitRequest.isSuccessful(), Transactional.DURATION);
+               requests.finished(commitRequest.isSuccessful(), OverallOperation.DURATION);
+            } else {
+               requests.finished(request.isSuccessful(), OverallOperation.DURATION);
+            }
+         } else {
+            if (requests != null) {
+               requests.discard();
+            }
+         }
+      } finally {
+         requests = null;
       }
       return result;
    }
@@ -227,8 +249,8 @@ public class Stressor extends Thread {
       }
    }
 
-   private void endTransactionAndRegisterStats() {
-      Request commitRequest = recording() ? stats.startRequest() : null;
+   private Request endTransactionAndRegisterStats() {
+      Request commitRequest = stats.startRequest();
       try {
          if (stage.commitTransactions) {
             ongoingTx.commit();
@@ -242,17 +264,9 @@ public class Stressor extends Thread {
             log.error("Failed to end transaction", e);
          }
       } finally {
-         if (requests != null) {
-            if (recording()) {
-               requests.add(commitRequest);
-               requests.finished(commitRequest.isSuccessful(), Transactional.DURATION);
-            } else {
-               requests.discard();
-            }
-            requests = null;
-         }
          clearTransaction();
       }
+      return commitRequest;
    }
 
    public void setUseTransactions(boolean useTransactions) {
@@ -289,17 +303,13 @@ public class Stressor extends Thread {
    }
 
    private Request startTransaction() throws TransactionException {
-      Request request = recording() ? stats.startRequest() : null;
+      Request request = stats.startRequest();
       try {
          ongoingTx.begin();
-         if (request != null) {
-            request.succeeded(Transactional.BEGIN);
-         }
+         request.succeeded(Transactional.BEGIN);
          return request;
       } catch (Exception e) {
-         if (request != null) {
-            request.failed(Transactional.BEGIN);
-         }
+         request.failed(Transactional.BEGIN);
          log.error("Failed to start transaction", e);
          throw new TransactionException(request, e);
       }
@@ -318,18 +328,16 @@ public class Stressor extends Thread {
       }
    }
 
-   private Request nextRequest() {
-      Request request = null;
-      if (recording()) {
-         if (uniformRateLimiterOpsPerNano > 0) {
-            request = stats.startRequest(uniformRateLimiterStart + (++uniformRateLimiterOpIndex) * uniformRateLimiterOpsPerNano);
-            long intendedTime = request.getRequestStartTime();
-            long now;
-            while ((now = System.nanoTime()) < intendedTime)
-               LockSupport.parkNanos(intendedTime - now);
-         } else {
-            request = stats.startRequest();
-         }
+   private Request enqueueRequest() {
+      Request request;
+      if (uniformRateLimiterOpsPerNano > 0) {
+         request = stats.startRequest(uniformRateLimiterStart + (++uniformRateLimiterOpIndex) * uniformRateLimiterOpsPerNano);
+         long intendedTime = request.getRequestStartTime();
+         long now;
+         while ((now = System.nanoTime()) < intendedTime)
+            LockSupport.parkNanos(intendedTime - now);
+      } else {
+         request = stats.startRequest();
       }
       return request;
    }

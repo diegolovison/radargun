@@ -177,7 +177,7 @@ public class Stressor extends Thread {
       T result = null;
       Exception exception = null;
       Request request = nextRequest();
-      Operation operation = isUseTransactions() ? invocation.txOperation() : invocation.operation();
+      Operation operation = invocation.operation();
       try {
          result = invocation.invoke();
          succeeded(request, operation);

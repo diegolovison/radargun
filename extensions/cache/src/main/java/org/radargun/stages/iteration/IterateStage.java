@@ -252,11 +252,6 @@ public class IterateStage extends TestStage {
       public Operation operation() {
          return Iterable.GET_ITERATOR;
       }
-
-      @Override
-      public Operation txOperation() {
-         return Iterable.GET_ITERATOR;
-      }
    }
 
    protected static class HasNext implements Invocation {
@@ -275,11 +270,6 @@ public class IterateStage extends TestStage {
       public Operation operation() {
          return Iterable.HAS_NEXT;
       }
-
-      @Override
-      public Operation txOperation() {
-         return Iterable.HAS_NEXT;
-      }
    }
 
    protected static class Next implements Invocation {
@@ -296,11 +286,6 @@ public class IterateStage extends TestStage {
 
       @Override
       public Operation operation() {
-         return Iterable.NEXT;
-      }
-
-      @Override
-      public Operation txOperation() {
          return Iterable.NEXT;
       }
    }

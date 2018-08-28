@@ -40,11 +40,6 @@ public class MultimapInvocations {
       public Operation operation() {
          return MultimapCacheOperations.GET;
       }
-
-      @Override
-      public Operation txOperation() {
-         return MultimapCacheOperations.GET;
-      }
    }
 
    /**
@@ -79,11 +74,6 @@ public class MultimapInvocations {
       public Operation operation() {
          return MultimapCacheOperations.PUT;
       }
-
-      @Override
-      public Operation txOperation() {
-         return MultimapCacheOperations.PUT;
-      }
    }
 
    /**
@@ -114,11 +104,6 @@ public class MultimapInvocations {
 
       @Override
       public Operation operation() {
-         return MultimapCacheOperations.REMOVE;
-      }
-
-      @Override
-      public Operation txOperation() {
          return MultimapCacheOperations.REMOVE;
       }
    }
@@ -155,11 +140,6 @@ public class MultimapInvocations {
       public Operation operation() {
          return MultimapCacheOperations.REMOVE_BY_KEY_VALUE;
       }
-
-      @Override
-      public Operation txOperation() {
-         return MultimapCacheOperations.REMOVE_BY_KEY_VALUE;
-      }
    }
 
    /**
@@ -190,11 +170,6 @@ public class MultimapInvocations {
 
       @Override
       public Operation operation() {
-         return MultimapCacheOperations.REMOVE_BY_PREDICATE;
-      }
-
-      @Override
-      public Operation txOperation() {
          return MultimapCacheOperations.REMOVE_BY_PREDICATE;
       }
    }
@@ -229,11 +204,6 @@ public class MultimapInvocations {
       public Operation operation() {
          return MultimapCacheOperations.CONTAINS_KEY;
       }
-
-      @Override
-      public Operation txOperation() {
-         return MultimapCacheOperations.CONTAINS_KEY;
-      }
    }
 
    /**
@@ -264,11 +234,6 @@ public class MultimapInvocations {
 
       @Override
       public Operation operation() {
-         return MultimapCacheOperations.CONTAINS_VALUE;
-      }
-
-      @Override
-      public Operation txOperation() {
          return MultimapCacheOperations.CONTAINS_VALUE;
       }
    }
@@ -305,11 +270,6 @@ public class MultimapInvocations {
       public Operation operation() {
          return MultimapCacheOperations.CONTAINS_ENTRY;
       }
-
-      @Override
-      public Operation txOperation() {
-         return MultimapCacheOperations.CONTAINS_ENTRY;
-      }
    }
 
    /**
@@ -338,11 +298,6 @@ public class MultimapInvocations {
 
       @Override
       public Operation operation() {
-         return MultimapCacheOperations.SIZE;
-      }
-
-      @Override
-      public Operation txOperation() {
          return MultimapCacheOperations.SIZE;
       }
    }

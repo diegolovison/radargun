@@ -32,11 +32,6 @@ public class CounterInvocations {
       public Operation operation() {
          return CounterOperations.INCREMENT_AND_GET;
       }
-
-      @Override
-      public Operation txOperation() {
-         return CounterOperations.INCREMENT_AND_GET;
-      }
    }
 
    public static final class DecrementAndGet implements Invocation<Long> {
@@ -58,11 +53,6 @@ public class CounterInvocations {
 
       @Override
       public Operation operation() {
-         return CounterOperations.DECREMENT_AND_GET;
-      }
-
-      @Override
-      public Operation txOperation() {
          return CounterOperations.DECREMENT_AND_GET;
       }
    }
@@ -90,11 +80,6 @@ public class CounterInvocations {
       public Operation operation() {
          return CounterOperations.ADD_AND_GET;
       }
-
-      @Override
-      public Operation txOperation() {
-         return CounterOperations.ADD_AND_GET;
-      }
    }
 
    public static final class CompareAndSet implements Invocation<Boolean> {
@@ -120,11 +105,6 @@ public class CounterInvocations {
 
       @Override
       public Operation operation() {
-         return CounterOperations.COMPARE_AND_SET;
-      }
-
-      @Override
-      public Operation txOperation() {
          return CounterOperations.COMPARE_AND_SET;
       }
    }

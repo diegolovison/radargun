@@ -35,10 +35,5 @@ public class RESTOperationInvocations {
       public Operation operation() {
          return RESTOperations.GET;
       }
-
-      @Override
-      public Operation txOperation() {
-         return RESTOperations.GET;
-      }
    }
 }

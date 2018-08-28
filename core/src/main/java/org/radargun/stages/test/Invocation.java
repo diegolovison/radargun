@@ -19,10 +19,4 @@ public interface Invocation<T> {
     * @return
     */
    Operation operation();
-
-   /**
-    * Operation variant if this was executed within transaction.
-    * @return
-    */
-   Operation txOperation();
 }

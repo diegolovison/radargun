@@ -3,8 +3,6 @@ package org.radargun.service;
 import java.util.List;
 import java.util.Set;
 
-import org.infinispan.remoting.transport.Transport;
-import org.infinispan.remoting.transport.jgroups.JGroupsTransport;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
@@ -60,27 +58,5 @@ public class InfinispanPartitionableLifecycle extends InfinispanKillableLifecycl
    public void setStartWithReachable(int slaveIndex, Set<Integer> members) {
       mySlaveIndex = slaveIndex;
       initiallyReachable = members;
-   }
-
-   public Transport createTransport() {
-      return new HookedJGroupsTransport();
-   }
-
-   private class HookedJGroupsTransport extends JGroupsTransport {
-      /**
-       * This is called after the channel is initialized but before it is connected
-       */
-      @Override
-      protected void startJGroupsChannelIfNeeded() {
-         log.trace("My index is " + mySlaveIndex + " and these slaves should be reachable: " + initiallyReachable);
-         if (mySlaveIndex >= 0 && initiallyReachable != null) {
-            List<JChannel> channels = getChannels((JChannel) this.channel);
-            log.trace("Found " + channels.size() + " channels");
-            for (JChannel channel : channels) {
-               setPartitionInChannel(channel, mySlaveIndex, initiallyReachable);
-            }
-         }
-         super.startJGroupsChannelIfNeeded();
-      }
    }
 }

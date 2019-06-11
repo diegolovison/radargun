@@ -136,7 +136,6 @@ public class Infinispan51EmbeddedService extends InfinispanEmbeddedService {
    @Override
    protected DefaultCacheManager createCacheManager(String configFile) throws IOException {
       ConfigurationBuilderHolder cbh = createConfiguration(configFile);
-      cbh.getGlobalConfigurationBuilder().transport().transport(partitionable.createTransport());
       DefaultCacheManager cm = new DefaultCacheManager(cbh, false);
       beforeCacheManagerStart(cm);
       return cm;

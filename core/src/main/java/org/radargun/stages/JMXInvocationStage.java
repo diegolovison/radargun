@@ -14,10 +14,14 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 
 import org.radargun.DistStageAck;
+import org.radargun.Operation;
 import org.radargun.StageResult;
 import org.radargun.config.Property;
 import org.radargun.config.Stage;
 import org.radargun.state.SlaveState;
+import org.radargun.stats.BasicStatistics;
+import org.radargun.stats.Request;
+import org.radargun.stats.Statistics;
 import org.radargun.traits.InjectTrait;
 import org.radargun.traits.JmxConnectionProvider;
 import org.radargun.utils.PrimitiveValue;
@@ -67,10 +71,17 @@ public class JMXInvocationStage extends AbstractDistStage {
    @InjectTrait
    private JmxConnectionProvider jmxConnectionProvider;
 
+   private Statistics statisticsPrototype = new BasicStatistics();
+   private Statistics stats;
+   private static final Operation JMX_OPERATION = Operation.register("JMX.Operation");
+
    @Override
    public DistStageAck executeOnSlave() {
       if (!isServiceRunning()) {
          return successfulResponse();
+      }
+      if (stats == null) {
+         stats = statisticsPrototype.copy();
       }
       if (methodParameters.size() != methodSignatures.length) {
          return errorResponse("Signatures need to be specified for individual method parameters.");
@@ -196,6 +207,8 @@ public class JMXInvocationStage extends AbstractDistStage {
                }
             }
          }
+         Request request = new Request(stats);
+         request.succeeded(JMX_OPERATION);
          if (totalResult == null) {
             log.error("Total result is empty.");
             return StageResult.FAIL;

@@ -45,7 +45,7 @@ public class ParallelStartStopStage extends AbstractServiceStartStage {
    public DistStageAck executeOnSlave() {
       if (lifecycle == null) {
          log.warn("No lifecycle for service " + slaveState.getServiceName());
-         return successfulResponse();
+         return successfulReøsponse();
       }
       boolean stopMe = stop.contains(slaveState.getSlaveIndex()) || RoleHelper.hasAnyRole(slaveState, stopRoles);
       boolean startMe = start.contains(slaveState.getSlaveIndex());

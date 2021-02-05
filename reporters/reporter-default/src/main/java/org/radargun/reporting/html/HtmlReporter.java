@@ -56,6 +56,9 @@ public class HtmlReporter extends AbstractReporter {
    @PropertyDelegate(prefix = "timeline.")
    private TimelineDocument.Configuration timelineConfig = new TimelineDocument.Configuration();
 
+   @Property(doc = "A fix for X-Content-Security-Policy header in the server. CSS and JS will be loaded from the provided URL. It must ends with / if a value is provided")
+   private String staticHost = "";
+
    private Set<String> allTests = new LinkedHashSet<>();
    private Collection<Report> reports;
 
@@ -226,6 +229,7 @@ public class HtmlReporter extends AbstractReporter {
       Map root = new HashMap();
       root.put("reporter", this);
       root.put("indexDocument", index);
+      root.put("staticHost", staticHost);
 
       processTemplate(root, targetDir, "index.html", "index.ftl");
    }

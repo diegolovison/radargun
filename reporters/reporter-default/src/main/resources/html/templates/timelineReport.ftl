@@ -1,8 +1,8 @@
 <html>
 <head>
     <title>${timelineDocument.getTitle()}</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js"></script>
+    <link rel="stylesheet" href="${staticHost}style.css">
+    <script src="${staticHost}script.js"></script>
 </head>
 
 <body>

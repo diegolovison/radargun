@@ -1,8 +1,8 @@
 <html>
 <head>
    <title>${indexDocument.getTitle()}</title>
-   <script src="script.js"></script>
-   <link rel="stylesheet" href="style.css">
+   <script src="${staticHost}script.js"></script>
+   <link rel="stylesheet" href="${staticHost}style.css">
    <#import "lib/library.ftl" as library />
 </head>
 <body>

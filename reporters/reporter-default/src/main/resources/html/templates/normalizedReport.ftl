@@ -1,7 +1,7 @@
 <html>
 <head>
    <title>${normalized.getTitle()}</title>
-   <link rel="stylesheet" href="style.css">
+   <link rel="stylesheet" href="${staticHost}style.css">
 </head>
 
 <body>

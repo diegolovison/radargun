@@ -1,12 +1,12 @@
 <html xmlns="http://www.w3.org/1999/html">
 <head>
     <title>${testReport.getTitle()}</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="c3.css">
+    <link rel="stylesheet" href="${staticHost}style.css">
+    <link rel="stylesheet" href="${staticHost}c3.css">
     <#import "lib/library.ftl" as library />
-    <script src="script.js"></script>
-    <script src="d3.v3.min.js"></script>
-    <script src="c3.min.js"></script>
+    <script src="${staticHost}script.js"></script>
+    <script src="${staticHost}d3.v3.min.js"></script>
+    <script src="${staticHost}c3.min.js"></script>
 </head>
 <body>
   <h1>Test ${testReport.getTestName()}</h1>

@@ -61,14 +61,47 @@ public class ThreadDumpMonitor extends JmxMonitor {
 
    public void threadDump() {
       log.info("Generating thread dump for: " + this.workerIndex);
-      String fileName = String.format("thread-dump-worker-%s-%s.dump", this.workerIndex, DATE_FORMATTER.format(LocalDateTime.now()));
+
+      // v1
+      String fileName = String.format("thread-dump-v1-worker-%s-%s.dump", this.workerIndex, DATE_FORMATTER.format(LocalDateTime.now()));
+      final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
       try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))){
-         for(ThreadInfo threadInfo : threadMXBean.dumpAllThreads(this.lockedMonitors, this.lockedSynchronizers)) {
-            writer.append(threadInfo.toString());
+         for (java.lang.management.ThreadInfo threadInfo : threadInfos) {
+            writer.append(threadInfo.getThreadName());
+            writer.newLine();
+
+            final Thread.State state = threadInfo.getThreadState();
+            writer.append("   java.lang.Thread.State: " + state);
+            writer.newLine();
+
+            final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
+            for (final StackTraceElement stackTraceElement : stackTraceElements) {
+               writer.append("        at " + stackTraceElement);
+               writer.newLine();
+            }
+            writer.newLine();
+            writer.newLine();
          }
       } catch (IOException e) {
          log.error("Error while generating thread dump", e);
       }
+
+      // v2
+      fileName = String.format("thread-dump-v2-worker-%s-%s.dump", this.workerIndex, DATE_FORMATTER.format(LocalDateTime.now()));
+      try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))){
+         for(ThreadInfo threadInfo : threadMXBean.dumpAllThreads(this.lockedMonitors, this.lockedSynchronizers)) {
+            writer.append(threadInfo.toString());
+            final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
+            for (final StackTraceElement stackTraceElement : stackTraceElements) {
+               writer.append("\n\t").append(" at").append(String.valueOf(stackTraceElement));
+            }
+            writer.append("\n\n");
+
+         }
+      } catch (IOException e) {
+         log.error("Error while generating thread dump", e);
+      }
+
       log.info("Thread dump generated for: " + this.workerIndex);
    }
 }

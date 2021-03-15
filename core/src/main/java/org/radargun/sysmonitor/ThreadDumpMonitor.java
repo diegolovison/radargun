@@ -3,6 +3,8 @@ package org.radargun.sysmonitor;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.management.LockInfo;
+import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.time.LocalDateTime;
@@ -62,46 +64,80 @@ public class ThreadDumpMonitor extends JmxMonitor {
    public void threadDump() {
       log.info("Generating thread dump for: " + this.workerIndex);
 
-      // v1
-      String fileName = String.format("thread-dump-v1-worker-%s-%s.dump", this.workerIndex, DATE_FORMATTER.format(LocalDateTime.now()));
+      String fileName = String.format("thread-dump-worker-%s-%s.dump", this.workerIndex, DATE_FORMATTER.format(LocalDateTime.now()));
       final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
       try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))){
-         for (java.lang.management.ThreadInfo threadInfo : threadInfos) {
-            writer.append(threadInfo.getThreadName());
-            writer.newLine();
-
-            final Thread.State state = threadInfo.getThreadState();
-            writer.append("   java.lang.Thread.State: " + state);
-            writer.newLine();
-
-            final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
-            for (final StackTraceElement stackTraceElement : stackTraceElements) {
-               writer.append("        at " + stackTraceElement);
-               writer.newLine();
-            }
-            writer.newLine();
-            writer.newLine();
-         }
-      } catch (IOException e) {
-         log.error("Error while generating thread dump", e);
-      }
-
-      // v2
-      fileName = String.format("thread-dump-v2-worker-%s-%s.dump", this.workerIndex, DATE_FORMATTER.format(LocalDateTime.now()));
-      try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))){
-         for(ThreadInfo threadInfo : threadMXBean.dumpAllThreads(this.lockedMonitors, this.lockedSynchronizers)) {
-            writer.append(threadInfo.toString());
-            final StackTraceElement[] stackTraceElements = threadInfo.getStackTrace();
-            for (final StackTraceElement stackTraceElement : stackTraceElements) {
-               writer.append("\n\t").append(" at").append(String.valueOf(stackTraceElement));
-            }
-            writer.append("\n\n");
-
+         for (ThreadInfo threadInfo : threadInfos) {
+            writer.append(threadInfoToString(threadInfo));
          }
       } catch (IOException e) {
          log.error("Error while generating thread dump", e);
       }
 
       log.info("Thread dump generated for: " + this.workerIndex);
+   }
+
+   // copied from ThreadInfo without the MAX_FRAMES restrictions.
+   public String threadInfoToString(ThreadInfo threadInfo) {
+      StringBuilder sb = new StringBuilder("\"" + threadInfo.getThreadName() + "\"" +
+            " Id=" + threadInfo.getThreadId() + " " +
+            threadInfo.getThreadState());
+      if (threadInfo.getLockName() != null) {
+         sb.append(" on " + threadInfo.getLockName());
+      }
+      if (threadInfo.getLockOwnerName() != null) {
+         sb.append(" owned by \"" + threadInfo.getLockOwnerName() +
+               "\" Id=" + threadInfo.getLockOwnerId());
+      }
+      if (threadInfo.isSuspended()) {
+         sb.append(" (suspended)");
+      }
+      if (threadInfo.isInNative()) {
+         sb.append(" (in native)");
+      }
+      sb.append('\n');
+      int i = 0;
+      final StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+      for (; i < stackTrace.length && i < stackTrace.length; i++) {
+         StackTraceElement ste = stackTrace[i];
+         sb.append("\tat " + ste.toString());
+         sb.append('\n');
+         if (i == 0 && threadInfo.getLockInfo() != null) {
+            Thread.State ts = threadInfo.getThreadState();
+            switch (ts) {
+               case BLOCKED:
+                  sb.append("\t-  blocked on " + threadInfo.getLockInfo());
+                  sb.append('\n');
+                  break;
+               case WAITING:
+                  sb.append("\t-  waiting on " + threadInfo.getLockInfo());
+                  sb.append('\n');
+                  break;
+               case TIMED_WAITING:
+                  sb.append("\t-  waiting on " + threadInfo.getLockInfo());
+                  sb.append('\n');
+                  break;
+               default:
+            }
+         }
+         for (MonitorInfo mi : threadInfo.getLockedMonitors()) {
+            if (mi.getLockedStackDepth() == i) {
+               sb.append("\t-  locked " + mi);
+               sb.append('\n');
+            }
+         }
+      }
+
+      LockInfo[] locks = threadInfo.getLockedSynchronizers();
+      if (locks.length > 0) {
+         sb.append("\n\tNumber of locked synchronizers = " + locks.length);
+         sb.append('\n');
+         for (LockInfo li : locks) {
+            sb.append("\t- " + li);
+            sb.append('\n');
+         }
+      }
+      sb.append('\n');
+      return sb.toString();
    }
 }

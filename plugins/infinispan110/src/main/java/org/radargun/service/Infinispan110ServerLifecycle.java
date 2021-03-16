@@ -37,7 +37,10 @@ public class Infinispan110ServerLifecycle extends Infinispan100ServerLifecycle {
          }
          // if the server still alive, fail
          if (this.service.getLifecycle().isRunning()) {
-            throw new IllegalStateException("Error while stopping the server. The server is still running");
+            // if a server a server in the cluster is blocked, the stop will fail.
+            // in this case, we call super that will kill the node
+            log.warn("Error while stopping the server. The server is still running. A bash command will be executed.");
+            super.stopInternal();
          }
       } else {
          throw new IllegalStateException("service.clustered should extends Infinispan100ServerClustered");
